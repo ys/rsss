@@ -3,6 +3,7 @@ package main
 import(
   "encoding/json"
   "github.com/gorilla/mux"
+  "github.com/hoisie/mustache"
   "net/http"
   "fmt"
 )
@@ -30,43 +31,41 @@ func (r ResponseArray) String() (s string) {
   return
 }
 
-func GetRSSHandle(w http.ResponseWriter, r *http.Request) {
-  v := getAllRSSS()
+type statusCapturingResponseWriter struct {
+  status int
+  http.ResponseWriter
+}
+
+func (w statusCapturingResponseWriter) WriteHeader(s int) {
+  w.status = s
+  w.ResponseWriter.WriteHeader(s)
+}
+
+func routerHandlerFunc(router *mux.Router) http.HandlerFunc {
+  return func(res http.ResponseWriter, req *http.Request) {
+    router.ServeHTTP(res, req)
+  }
+}
+
+func GetRssHandle(w http.ResponseWriter, r *http.Request) {
+  v := getAllRssFeeds()
   fmt.Fprint(w, Response(v))
   return
 }
 
-func SetRSSHandle(w http.ResponseWriter, r *http.Request) {
+func SetRssHandle(w http.ResponseWriter, r *http.Request) {
   w.Header().Set("Content-Type", "application/json")
   r.ParseForm()
-  fmt.Println(r.Form)
-
   name := r.Form["name"][0]
   url := r.Form["url"][0]
-  v, err := AddRSSFeed(name, url)
-  if err != nil {
-    fmt.Fprint(w, v)
-    return
-  }
-  fmt.Println(v)
+  AddRssFeed(name, url)
   resp := make(map[string]string)
   resp[name] = url
   fmt.Fprint(w, Response(resp))
   return
 }
 
-func UpdateRSSHandle(w http.ResponseWriter, r *http.Request) {
-  vars := mux.Vars(r)
-  name := vars["name"]
-  url := GetRSSUrl(name)
-  fmt.Println(url)
-  rss := GetRss(url)
-  for _, item := range rss.Item {
-    AddItem(item)
-  }
-}
-
-func GetRSSItemsHandle(w http.ResponseWriter, r *http.Request) {
+func GetRssItemsHandle(w http.ResponseWriter, r *http.Request) {
   w.Header().Set("Content-Type", "application/json")
   items := GetAllItems()
   resp := make(map[string][]Item)
@@ -75,12 +74,20 @@ func GetRSSItemsHandle(w http.ResponseWriter, r *http.Request) {
   return
 }
 
+func GetRssHtmlHandle(w http.ResponseWriter, r *http.Request) {
+  w.Header().Set("Content-Type", "text/html")
+  items := GetAllItems()
+  resp := make(map[string][]Item)
+  resp["items"] = items
+  fmt.Fprint(w, mustache.RenderFileInLayout("index.html.mustache", "layout.html.mustache", resp))
+}
 
-func Router() *mux.Router {
+func router() *mux.Router {
   r := mux.NewRouter()
-  r.HandleFunc("/rsss", GetRSSHandle).Methods("GET")
-  r.HandleFunc("/rsss", SetRSSHandle).Methods("POST")
-  r.HandleFunc("/rsss/all", GetRSSItemsHandle).Methods("GET")
-  r.HandleFunc("/rsss/{name}", UpdateRSSHandle).Methods("POST")
+  r.HandleFunc("/rsss", GetRssHtmlHandle).Methods("GET")
+  r.HandleFunc("/rsss/feeds", GetRssHandle).Methods("GET")
+  r.HandleFunc("/rsss", SetRssHandle).Methods("POST")
+  r.HandleFunc("/rsss/all", GetRssItemsHandle).Methods("GET")
+  r.PathPrefix("/").Handler(http.FileServer(http.Dir("./assets/")))
   return r
 }

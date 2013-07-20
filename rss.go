@@ -39,7 +39,7 @@ type Item struct {
 
 type Date string
 
-func GetRss(url string) Channel {
+func fetchRssFeed(url string) Channel {
   resp, err := http.Get(url)
   if err != nil {
     fmt.Println(err)
@@ -59,4 +59,8 @@ func GetRss(url string) Channel {
     os.Exit(1)
   }
   return rss.Channel
+}
+
+func (i Item) PubDateFormatted() string {
+  return toNiceDate(i.PubDate)
 }

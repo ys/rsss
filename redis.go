@@ -1,9 +1,7 @@
 package main
 
 import(
-  "fmt"
   "github.com/garyburd/redigo/redis"
-  "encoding/json"
 )
 
 func RedisClient() redis.Conn {
@@ -14,59 +12,37 @@ func RedisClient() redis.Conn {
   return c
 }
 
-func AddRSSFeed(name string, url string) (interface{}, error) {
+func redisDo(cmd string, args ...interface{}) interface{} {
   c := RedisClient()
   defer c.Close()
-  c.Send("HSET", "RSSS", name, url)
-  c.Flush()
-  v, err := c.Receive()
-  return v, err
-}
-
-func GetRSSUrl(name string) (string) {
-  c := RedisClient()
-  defer c.Close()
-  url, _ := redis.String(c.Do("HGET", "RSSS", name))
-  return url
-}
-
-func getAllRSSS() (map[string]string) {
-  c:= RedisClient()
-  defer c.Close()
-  values, err := redis.Values(c.Do("HGETALL", "RSSS"))
+  value, err := c.Do(cmd, args...)
   if err != nil {
     panic(err)
   }
-  rsss := make(map[string]string)
-  for i := 0; i < len(values); i += 2 {
-    rsss[fmt.Sprintf("%s", values[i])] = fmt.Sprintf("%s", values[i+1])
-  }
-  return rsss
+  return value
 }
 
-func GetAllItems() ([]Item) {
-  c:= RedisClient()
-  defer c.Close()
-  values, err := redis.Strings(c.Do("LRANGE", "items", 0, 10))
+func toString(data interface{}) string {
+  value, err := redis.String(data, nil)
   if err != nil {
     panic(err)
   }
-  arr := make([]Item, 0)
-  for _, value := range values {
-    var item Item
-    fmt.Println(value)
-    json.Unmarshal([]byte(value), &item)
-    arr = append(arr, item)
-  }
-  return arr
+  return value
 }
 
-func AddItem(item Item) (interface{}, error) {
-  c := RedisClient()
-  defer c.Close()
-  item_json, _ := json.Marshal(item)
-  c.Send("LPUSH", "items", item_json)
-  c.Flush()
-  v, err := c.Receive()
-  return v, err
+func toStrings(data interface{}) []string {
+  value, err := redis.Strings(data, nil)
+  if err != nil {
+    panic(err)
+  }
+  return value
 }
+
+func toValues(data interface{}) []interface{} {
+  value, err := redis.Values(data, nil)
+  if err != nil {
+    panic(err)
+  }
+  return value
+}
+
