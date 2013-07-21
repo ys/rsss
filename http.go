@@ -47,17 +47,17 @@ func routerHandlerFunc(router *mux.Router) http.HandlerFunc {
   }
 }
 
-func GetRssHandle(w http.ResponseWriter, r *http.Request) {
+func getRssHandle(w http.ResponseWriter, r *http.Request) {
   v := getAllRssFeeds()
   fmt.Fprint(w, Response(v))
   return
 }
 
-func SetRssHandle(w http.ResponseWriter, r *http.Request) {
+func setRssHandle(w http.ResponseWriter, r *http.Request) {
   w.Header().Set("Content-Type", "application/json")
   r.ParseForm()
-  name := r.Form["name"][0]
-  url := r.Form["url"][0]
+  name := r.Form.Get("name")
+  url := r.Form.Get("url")
   AddRssFeed(name, url)
   resp := make(map[string]string)
   resp[name] = url
@@ -65,7 +65,7 @@ func SetRssHandle(w http.ResponseWriter, r *http.Request) {
   return
 }
 
-func GetRssItemsHandle(w http.ResponseWriter, r *http.Request) {
+func getRssItemsHandle(w http.ResponseWriter, r *http.Request) {
   w.Header().Set("Content-Type", "application/json")
   items := GetAllItems()
   resp := make(map[string][]Item)
@@ -74,7 +74,7 @@ func GetRssItemsHandle(w http.ResponseWriter, r *http.Request) {
   return
 }
 
-func GetRssHtmlHandle(w http.ResponseWriter, r *http.Request) {
+func getRssHtmlHandle(w http.ResponseWriter, r *http.Request) {
   w.Header().Set("Content-Type", "text/html")
   items := GetAllItems()
   resp := make(map[string][]Item)
@@ -82,12 +82,18 @@ func GetRssHtmlHandle(w http.ResponseWriter, r *http.Request) {
   fmt.Fprint(w, mustache.RenderFileInLayout("index.html.mustache", "layout.html.mustache", resp))
 }
 
+func newRssHtmlHandle(w http.ResponseWriter, r *http.Request) {
+  w.Header().Set("Content-Type", "text/html")
+  fmt.Fprint(w, mustache.RenderFileInLayout("new.html.mustache", "layout.html.mustache", nil))
+}
+
 func router() *mux.Router {
   r := mux.NewRouter()
-  r.HandleFunc("/rsss", GetRssHtmlHandle).Methods("GET")
-  r.HandleFunc("/rsss/feeds", GetRssHandle).Methods("GET")
-  r.HandleFunc("/rsss", SetRssHandle).Methods("POST")
-  r.HandleFunc("/rsss/all", GetRssItemsHandle).Methods("GET")
+  r.HandleFunc("/rsss", getRssHtmlHandle).Methods("GET")
+  r.HandleFunc("/rsss/feeds", getRssHandle).Methods("GET")
+  r.HandleFunc("/rsss/all", getRssItemsHandle).Methods("GET")
+  r.HandleFunc("/rsss/new", newRssHtmlHandle).Methods("GET")
+  r.HandleFunc("/rsss", setRssHandle).Methods("POST")
   r.PathPrefix("/").Handler(http.FileServer(http.Dir("./assets/")))
   return r
 }

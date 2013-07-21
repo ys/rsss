@@ -17,5 +17,5 @@ func toUnix(timeString Date) int64 {
 
 func toNiceDate(timeString Date) string {
   t := toTime(timeString)
-  return t.Format(time.RFC1123)
+  return t.Format("Mon, 02 Jan 2006 15:04")
 }

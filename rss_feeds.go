@@ -2,11 +2,14 @@ package main
 
 import(
   "fmt"
+  "net/url"
   "encoding/json"
 )
 
 func AddRssFeed(name string, url string) interface{} {
-  return redisDo("HSET", "RSSS", name, url)
+  v := redisDo("HSET", "RSSS", name, url)
+  importRss(url)
+  return v
 }
 
 func GetRssUrl(name string) (string) {
@@ -46,10 +49,12 @@ func AddItem(item Item) interface{} {
   return redisDo("ZADD", "items", toUnix(item.PubDate), item_json)
 }
 
-func importRss(url string) {
-  fmt.Println(url)
-  rss := fetchRssFeed(url)
+func importRss(rssUrl string) {
+  fmt.Println(rssUrl)
+  rss := fetchRssFeed(rssUrl)
   for _, item := range rss.Item {
+    urlLink, _ := url.Parse(rss.Link)
+    item.Host = urlLink.Host
     AddItem(item)
   }
 }

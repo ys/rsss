@@ -35,6 +35,7 @@ type Item struct {
   Enclosure   ItemEnclosure `xml:"enclosure"`
   Description string        `xml:"description"`
   Content     string        `xml:"content"`
+  Host        string
 }
 
 type Date string
