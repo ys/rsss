@@ -1,6 +1,7 @@
 package main
 
 import(
+  "os"
   "net/http"
 )
 
@@ -12,6 +13,5 @@ func main() {
 
   handler := routerHandlerFunc(router())
   handler = wrapLogging(handler, logs)
-  logs <- "Listening on port 8888"
-  http.ListenAndServe(":8888", handler)
+  http.ListenAndServe(":"+os.Getenv("PORT"), handler)
 }
