@@ -1,11 +1,16 @@
 package main
 
 import(
+  "os"
   "github.com/garyburd/redigo/redis"
 )
 
 func RedisClient() redis.Conn {
-  c, err := redis.Dial("tcp", ":6379")
+  url := os.Getenv("REDIS_URL")
+  if url == "" {
+    url = ":6379"
+  }
+  c, err := redis.Dial("tcp", url)
   if err != nil {
     panic(err)
   }
