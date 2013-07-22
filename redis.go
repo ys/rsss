@@ -2,19 +2,38 @@ package main
 
 import(
   "os"
+  "net/url"
   "github.com/garyburd/redigo/redis"
 )
 
 func RedisClient() redis.Conn {
-  url := os.Getenv("REDIS_URL")
-  if url == "" {
-    url = ":6379"
+  redisUrl := os.Getenv("REDIS_URL")
+  if redisUrl == "" {
+    redisUrl = "redis://127.0.0.1:6379"
   }
-  c, err := redis.Dial("tcp", url)
+  redisUrl, pw := parseRedisUrl(redisUrl)
+  c, err := redis.Dial("tcp", redisUrl)
   if err != nil {
     panic(err)
   }
+   _, authErr := c.Do("AUTH", pw)
+   if authErr != nil {
+     // handle error
+   }
   return c
+}
+
+func parseRedisUrl(redisUrl string) (string, string) {
+  u, err := url.Parse(redisUrl)
+  if err != nil {
+    // handle error
+  }
+  pw := ""
+  if u.User != nil {
+    pw, _ = u.User.Password()
+  }
+  return u.Host, pw
+
 }
 
 func redisDo(cmd string, args ...interface{}) interface{} {
