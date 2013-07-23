@@ -10,7 +10,7 @@ func SyncRssFeeds() {
     rssFeeds := getRssFeedUrls()
     fmt.Println(rssFeeds)
     for _, url := range rssFeeds {
-      importRss(url)
+      go importRss(url)
     }
     time.Sleep(6000 * 1000 * time.Millisecond)
   }

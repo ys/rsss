@@ -2,7 +2,6 @@ package main
 
 import(
   "fmt"
-  "net/url"
   "encoding/json"
 )
 
@@ -46,16 +45,20 @@ func GetAllItems() ([]Item) {
 
 func AddItem(item Item) interface{} {
   item_json, _ := json.Marshal(item)
-  return redisDo("ZADD", "items", toUnix(item.PubDate), item_json)
+  var score int64
+  if item.PubDate == "" {
+    fmt.Println(item.Host)
+    score = toUnix(item.Updated)
+  } else {
+    score = toUnix(item.PubDate)
+  }
+  return redisDo("ZADD", "items", score , item_json)
 }
 
 func importRss(rssUrl string) {
-  fmt.Println(rssUrl)
   rss := fetchRssFeed(rssUrl)
-  for _, item := range rss.Item {
-    urlLink, _ := url.Parse(rss.Link)
-    item.Host = urlLink.Host
+  for _, item := range rss.Item() {
+    item.Host = rss.Title
     AddItem(item)
   }
 }
-

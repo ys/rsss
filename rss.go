@@ -4,10 +4,11 @@ import(
   "net/http"
   "fmt"
   "os"
+  "strings"
   "encoding/xml"
 )
 
-type RSS struct {
+type Rss struct {
   Channel Channel `xml:"channel"`
 }
 
@@ -17,7 +18,8 @@ type Channel struct {
   Description   string `xml:"description"`
   Language      string `xml:"language"`
   LastBuildDate Date   `xml:"lastBuildDate"`
-  Item          []Item `xml:"item"`
+  Item1          []Item `xml:"item"`
+  Item2          []Item `xml:"entry"`
 }
 
 type ItemEnclosure struct {
@@ -30,7 +32,9 @@ type Item struct {
   Link        string        `xml:"link"`
   Comments    string        `xml:"comments"`
   PubDate     Date          `xml:"pubDate"`
+  Updated     Date          `xml:"updated"`
   GUID        string        `xml:"guid"`
+  ID        string          `xml:"id"`
   Category    []string      `xml:"category"`
   Enclosure   ItemEnclosure `xml:"enclosure"`
   Description string        `xml:"description"`
@@ -46,6 +50,7 @@ func fetchRssFeed(url string) Channel {
     fmt.Println(err)
     os.Exit(1)
   }
+  fmt.Println(resp.Header)
   defer resp.Body.Close()
   xmlDecoder := xml.NewDecoder(resp.Body)
   if err != nil {
@@ -53,15 +58,37 @@ func fetchRssFeed(url string) Channel {
     os.Exit(1)
   }
 
-  var rss RSS
-  err = xmlDecoder.Decode(&rss)
+  header := resp.Header.Get("Content-Type")
+  var rss Rss
+  var channel Channel
+  if strings.Contains(header, "application/rss+xml") || strings.Contains(header, "text/xml") {
+    err = xmlDecoder.Decode(&rss)
+  } else {
+    err = xmlDecoder.Decode(&channel)
+  }
   if err != nil {
     fmt.Println(err)
     os.Exit(1)
   }
-  return rss.Channel
+  if strings.Contains(header, "application/rss+xml") || strings.Contains(header, "text/xml") {
+    return rss.Channel
+  } else {
+    return channel
+  }
 }
 
 func (i Item) PubDateFormatted() string {
-  return toNiceDate(i.PubDate)
+  if i.PubDate != "" {
+    return toNiceDate(i.PubDate)
+  } else {
+    return toNiceDate(i.Updated)
+  }
+}
+
+func (i Channel) Item() []Item {
+  if i.Item1 != nil {
+    return i.Item1
+  } else {
+    return i.Item2
+  }
 }
