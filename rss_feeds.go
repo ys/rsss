@@ -1,7 +1,6 @@
 package main
 
 import(
-  "fmt"
   "encoding/json"
 )
 
@@ -47,7 +46,6 @@ func AddItem(item Item) interface{} {
   item_json, _ := json.Marshal(item)
   var score int64
   if item.PubDate == "" {
-    fmt.Println(item.Host)
     score = toUnix(item.Updated)
   } else {
     score = toUnix(item.PubDate)
@@ -59,6 +57,7 @@ func importRss(rssUrl string) {
   rss := fetchRssFeed(rssUrl)
   for _, item := range rss.Item() {
     item.Host = rss.Title
+    item.HostLink = rss.Link
     AddItem(item)
   }
 }

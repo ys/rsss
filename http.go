@@ -89,7 +89,7 @@ func newRssHtmlHandle(w http.ResponseWriter, r *http.Request) {
 
 func router() *mux.Router {
   r := mux.NewRouter()
-  r.HandleFunc("/rsss", getRssHtmlHandle).Methods("GET")
+  r.HandleFunc("/", getRssHtmlHandle).Methods("GET")
   r.HandleFunc("/rsss/feeds", getRssHandle).Methods("GET")
   r.HandleFunc("/rsss/all", getRssItemsHandle).Methods("GET")
   r.HandleFunc("/rsss/new", newRssHtmlHandle).Methods("GET")
